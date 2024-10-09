@@ -1,3 +1,19 @@
+"""
+Source: https://github.com/ChenyanWu/MEBOW/tree/master
+
+Raises:
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+
+Returns:
+    _type_: _description_
+
+Yields:
+    _type_: _description_
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import logging

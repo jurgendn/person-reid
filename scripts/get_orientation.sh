@@ -1,6 +1,16 @@
 #!/bin/bash
-export PYTHONPATH=.
-python tools/get_orientation.py --config configs/hrnet.yaml \
-                                --pretrained pretrained/model_hboe.pth \
-                                --dataset /Users/jurgendn/Documents/projects/personal/dataset/LTCC_ReID/ \
-                                --target-set query
+# PYTHONPATH=. uv run tools/get_orientation.py --config ./configs/hrnet.yaml \
+#     --pretrained pretrained/model_hboe.pt \
+#     --dataset /media/jurgen/Documents/datasets/LTCC_ReID/ \
+#     --dataset-name ltcc \
+#     --target-set train \
+#     --device cuda \
+#     --batch-size 32
+
+PYTHONPATH=. uv run tools/get_orientation.py --config ./configs/hrnet.yaml \
+    --pretrained pretrained/model_hboe.pt \
+    --dataset /media/jurgen/Documents/datasets/PRCC/ \
+    --dataset-name prcc \
+    --target-set query_diff \
+    --device cuda \
+    --batch-size 64

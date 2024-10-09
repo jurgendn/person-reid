@@ -69,9 +69,9 @@ class LTCC(object):
         )
         logger.info("  ----------------------------------------")
 
-        self.train = train
-        self.query = query
-        self.gallery = gallery
+        self.train = train      #List[(img_path, pid, camid, clothes_id)]
+        self.query = query      #List[(img_path, pid, camid, clothes_id)]
+        self.gallery = gallery  #List[(img_path, pid, camid, clothes_id)]
 
         self.num_train_pids = num_train_pids
         self.num_train_clothes = num_train_clothes

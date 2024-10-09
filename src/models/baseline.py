@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 from torchmetrics import functional as FM
 
 from configs.factory import (
-    MainConfig,
     FTNetConfig,
-    ShapeEmbeddingConfig,
+    MainConfig,
     MiscellaneusConfig,
+    ShapeEmbeddingConfig,
 )
 from src.datasets.get_loader import get_train_data
 from src.losses import build_losses

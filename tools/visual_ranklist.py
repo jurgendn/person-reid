@@ -3,10 +3,10 @@ from argparse import ArgumentParser
 import yaml
 
 from configs.factory import (
-    MainConfig,
-    ShapeEmbeddingConfig,
     FTNetConfig,
+    MainConfig,
     MiscellaneusConfig,
+    ShapeEmbeddingConfig,
 )
 from src.models.baseline import Baseline
 from utils.visualize_ranklist import visualize_ranklist

@@ -1,8 +1,10 @@
-import numpy as np
 import copy
 import random
 from collections import defaultdict
+
+import numpy as np
 from torch.utils.data.sampler import Sampler
+
 
 class RandomIdentitySampler(Sampler):
     """
@@ -14,6 +16,7 @@ class RandomIdentitySampler(Sampler):
         num_instances (int): number of instances per identity.
         epoch (int): current epoch number.
     """
+
     def __init__(self, data_source, num_instances=4, seed=1):
         self.data_source = data_source
         self.num_instances = num_instances
