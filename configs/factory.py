@@ -51,7 +51,6 @@ class HRNetStageConfig(BaseModel):
 class HRNetModelExtraConfig(BaseModel):
     pretrained_layers: List[str]
     final_conv_kernel: int
-    stem_inplane: int
 
     stage2: HRNetStageConfig
     stage3: HRNetStageConfig
@@ -68,6 +67,7 @@ class HRNetModelConfig(BaseModel):
     image_size: Tuple[int, int]
     heatmap_size: Tuple[int, int]
     sigma: int
+    return_hoe: bool
     extra: HRNetModelExtraConfig
 
 

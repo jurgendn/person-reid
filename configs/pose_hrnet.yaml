@@ -12,59 +12,43 @@ workers: "8x"
 print_freq: 30
 
 model:
-  image_size: [192, 256]
-  heatmap_size: [48, 64]
+  image_size: [256, 192]
+  heatmap_size: [64, 48]
   init_weights: True
   name: pose_hrnet
   num_joints: 17
-  pretrained: pretrained/model_hboe.pt
+  pretrained: ./pretrained/hrnet_w32_256x192.pth
   sigma: 2
+  type: simple
   tag_per_joint: True
   target_type: gaussian
   use_featuremap: True
-  return_hoe: True
+  return_hoe: False
 
   extra:
     final_conv_kernel: 1
-    pretrained_layers:
-      [
-        "conv1",
-        "bn1",
-        "conv2",
-        "bn2",
-        "layer1",
-        "transition1",
-        "stage2",
-        "transition2",
-        "stage3",
-        "transition3",
-        "stage4",
-      ]
-
+    pretrained_layers: ["*"]
     stage2:
       block: BASIC
       fuse_method: SUM
       num_blocks: [4, 4]
-      num_branches: 2
       num_channels: [32, 64]
+      num_branches: 2
       num_modules: 1
-
     stage3:
       block: BASIC
       fuse_method: SUM
       num_blocks: [4, 4, 4]
-      num_branches: 3
       num_channels: [32, 64, 128]
+      num_branches: 3
       num_modules: 4
-
     stage4:
       block: BASIC
       fuse_method: SUM
       num_blocks: [4, 4, 4, 4]
-      num_branches: 4
       num_channels: [32, 64, 128, 256]
+      num_branches: 4
       num_modules: 3
-
 loss_use_different_joints_weight: False
 loss_use_target_weight: True
 

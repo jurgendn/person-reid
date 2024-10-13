@@ -11,6 +11,7 @@ dependencies = [
     "more-itertools>=10.5.0",
     "numpy>=1.26.4",
     "pydantic>=2.9.2",
+    "pytest>=8.3.3",
     "pytorch-lightning>=2.4.0",
     "timm>=1.0.9",
     "torch-geometric>=2.6.1",
