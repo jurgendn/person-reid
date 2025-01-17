@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 from configs.factory import HRNetConfig
 from src.datasets.ltcc import LTCC
 from src.datasets.prcc import PRCC
-from src.models.orientations.pose_hrnet import PoseHighResolutionNet
+from src.models.hrnet.pose_hrnet import PoseHighResolutionNet
 
 
 def parse():

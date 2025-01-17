@@ -17,8 +17,8 @@ class ClothesBasedAdversarialLoss(nn.Module):
 
     def __init__(self, scale=16, epsilon=0.1):
         super().__init__()
-        self.scale = scale
-        self.epsilon = epsilon
+        self.register_buffer("scale", tensor=torch.tensor(scale))
+        self.register_buffer("epsilon", tensor=torch.tensor(epsilon))
 
     def forward(
         self, inputs: torch.Tensor, targets: torch.Tensor, positive_mask: torch.Tensor
@@ -37,7 +37,7 @@ class ClothesBasedAdversarialLoss(nn.Module):
         identity_mask = (
             torch.zeros(inputs.size())
             .scatter_(1, targets.unsqueeze(1).data.cpu(), 1)
-            .to(self.parameters.device)
+            .to(self.scale.device)
         )
 
         exp_logits = torch.exp(inputs)

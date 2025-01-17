@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict, List, Tuple
 
 import torch
 from pytorch_lightning import LightningModule
@@ -36,7 +36,7 @@ class Baseline(LightningModule):
 
         self.orientation_guided = main_config.orientation_guided
         self.lr = main_config.lr
-        self.train_data, self.sampler = get_train_data(config=main_config)
+        self.train_data, self.sampler = get_train_data(config=main_config) 
         self.class_num = self.train_data.num_classes
         self.num_clothes = self.train_data.num_clothes
         self.pid2clothes = torch.from_numpy(self.train_data.pid2clothes)
@@ -122,7 +122,22 @@ class Baseline(LightningModule):
         else:
             return appearance_feature
 
-    def configure_optimizers(self):
+    def configure_optimizers(
+        self,
+    ) -> Tuple[List[optim.Optimizer], List]:
+        """
+        Configures and returns the optimizers and learning rate schedulers.
+
+        This function sets up the optimizers for the network components based on the
+        specified optimizer type in the configuration. It also initializes the learning
+        rate scheduler for the main optimizer.
+
+        Returns:
+            Tuple[List[optim.Optimizer], List[optim.lr_scheduler._LRScheduler]]: A tuple containing
+            a list of optimizers and a list of learning rate schedulers.
+        """
+
+        # Collect parameters from the model components
         parameters = (
             list(self.ft_net.parameters())
             + list(self.shape_embedding.parameters())
@@ -130,39 +145,38 @@ class Baseline(LightningModule):
             + list(self.id_classifier.parameters())
         )
 
-        if self.config.optimizer == "adam":
-            optim_name = optim.Adam
-            optimizer = optim_name(
-                params=parameters,
-                lr=self.lr,
-                weight_decay=self.config.weight_decay,
-            )
-            optimizer_cc = optim_name(
-                params=self.clothes_classifier.parameters(),
-                lr=self.lr,
-                weight_decay=self.config.weight_decay,
-            )
-        elif self.config.optimizer == "sgd":
-            optim_name = optim.SGD
-            optimizer = optim_name(
-                params=parameters,
-                lr=self.lr,
-                weight_decay=self.config.weight_decay,
-                momentum=0.9,
-                nesterov=True,
-            )
-            optimizer_cc = optim_name(
-                params=self.clothes_classifier.parameters(),
-                lr=self.lr,
-                weight_decay=self.config.weight_decay,
-                momentum=0.9,
-                nesterov=True,
-            )
+        def _create_optimizer(
+            optimizer_type: str, params: List[Any]
+        ) -> optim.Optimizer:
+            """Creates an optimizer based on the specified type."""
+            if optimizer_type == "adam":
+                return optim.Adam(
+                    params=params,
+                    lr=self.lr,
+                    weight_decay=self.config.weight_decay,
+                )
+            elif optimizer_type == "sgd":
+                return optim.SGD(
+                    params=params,
+                    lr=self.lr,
+                    weight_decay=self.config.weight_decay,
+                    momentum=0.9,
+                    nesterov=True,
+                )
+            else:
+                raise ValueError(f"Unsupported optimizer type: {optimizer_type}")
 
+        # Create main optimizer and clothes classifier optimizer
+        optimizer = _create_optimizer(self.config.optimizer, parameters)
+        optimizer_cc = _create_optimizer(
+            self.config.optimizer, self.clothes_classifier.parameters()
+        )
+
+        # Create the learning rate scheduler
         lr_scheduler = optim.lr_scheduler.StepLR(
             optimizer=optimizer, step_size=20, gamma=0.1
         )
-        # return {"optimizer": [self.optimizer, self.optimizer_cc], "lr_scheduler": lr_scheduler}
+
         return [optimizer, optimizer_cc], [lr_scheduler]
 
     def training_step(self, batch, batch_idx) -> Dict:
@@ -187,8 +201,8 @@ class Baseline(LightningModule):
             x_image=a_img, x_pose_features=a_pose, edge_index=self.shape_edge_index
         )
 
-        pos_mask = self.pid2clothes[a_id].float().to(self.device)
-
+        pos_mask = self.pid2clothes[a_id].float().to(self.device) # Positive Mask
+    
         # Normalize features
         if self.config.norm_feature:
             a_feature = normalize_feature(a_feature)

@@ -88,20 +88,17 @@ class ClassBlock(nn.Module):
 
 # Define the ResNet50-based Model
 class FTNet(nn.Module):
-    def __init__(
-        self,
-        config: FTNetConfig,
-    ):
+    def __init__(self, target_layer: str, output_layer_name: str):
         super(FTNet, self).__init__()
         model_ft = models.resnet50(weights="IMAGENET1K_V1")
         self.model = IntermediateLayerGetter(
             model=model_ft,
-            return_layers={config.target_layer: config.output_layer_name},
+            return_layers={target_layer: output_layer_name},
         )
         num_channels = get_num_channels(
             backbone=self.model,
             in_channels=3,
-            output_name=config.output_layer_name,
+            output_name=output_layer_name,
         )
         # avg pooling to global pooling
         self.max_avg_pooling = pooling.MaxAvgPooling()
@@ -129,7 +126,12 @@ class FTNet(nn.Module):
 # pytorch > 1.6
 class FTNet_Swin(nn.Module):
     def __init__(
-        self, class_num=77, droprate=0.5, stride=2, linear_num=512, return_f=True
+        self,
+        class_num: int = 77,
+        droprate: float = 0.5,
+        stride: int = 2,
+        linear_num: int = 512,
+        return_f: bool = True,
     ):
         super(FTNet_Swin, self).__init__()
         model_ft = timm.create_model(
@@ -154,8 +156,14 @@ class FTNet_Swin(nn.Module):
 
 
 # Define the HRNet18-based Model
-class FTNet_HR(nn.Module):
-    def __init__(self, class_num=77, droprate=0.5, linear_num=512, return_f=True):
+class FTNetHR(nn.Module):
+    def __init__(
+        self,
+        class_num: int = 77,
+        droprate: float = 0.5,
+        linear_num: int = 512,
+        return_f: bool = True,
+    ):
         super().__init__()
         model_ft = timm.create_model("hrnet_w18", pretrained=True)
         # avg pooling to global pooling

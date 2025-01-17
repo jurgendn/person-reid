@@ -1,3 +1,4 @@
+import torch
 import glob
 import json
 import os.path as osp
@@ -61,13 +62,32 @@ cloth_change_ids = [
 ]
 
 
+def get_orientation(angle: float, num_segments: int):
+    pi = 180
+    # Normalize the angle to range 0 <= angle < 360
+    angle_normalized = angle % (2 * pi)
+    if angle_normalized < 0:
+        angle_normalized += 2 * pi
+    angle_normalized = angle_normalized - 90
+    # Calculate the segment angle and adjust the starting angle
+    segment_angle = 2 * pi / num_segments
+    angle_adjusted = angle_normalized + (pi / num_segments)
+
+    # Determine the segment index
+    k = np.floor(angle_adjusted / segment_angle) % num_segments
+
+    return int(k)
+
+
 class TrainDatasetOrientation(Dataset):
-    def __init__(self, json_path: str, transforms: Union[T.Compose, nn.Module]) -> None:
+    def __init__(self, json_path: str, transforms: T.Compose | nn.Module) -> None:
         super(TrainDatasetOrientation, self).__init__()
         self.json_path = json_path
         self.train_dir = get_img_list(self.json_path)
         self.transforms = transforms
         self.id_to_idx, self.num_classes = classes_to_idx(self.train_dir)
+        self.num_segments = 4
+        self.pid2clothes = torch.zeros(size=(len(self.train_dir),)).long()
 
     def __len__(self):
         return len(self.train_dir)
@@ -78,7 +98,9 @@ class TrainDatasetOrientation(Dataset):
         a_id = img["p_id"]
         a_orientation = img["orientation"]
         a_pose = img["pose_landmarks"]
-        a_cloth_id = img["cloth_id"]
+        position_mask = self.pid2clothes[a_id]
+        # If the dataset doesn't contain cloth_id, set cloth_id = 0
+        a_cloth_id = img.get("cloth_id", 0)
 
         a_img_tensor, a_size = get_img_tensor(a_img_path, self.transforms)
         pose_tensor = get_pose_tensor(a_pose, a_size)
@@ -92,56 +114,43 @@ class TrainDatasetOrientation(Dataset):
                 diff_id.append(item)
 
         same_id_diff_ori, diff_id_same_ori = [], []
+        a_segment = get_orientation(angle=a_orientation, num_segments=self.num_segments)
 
-        if (
-            0 <= a_orientation <= 9
-            or 63 <= a_orientation <= 71
-            or 27 <= a_orientation <= 45
-        ):
-            # anchor has back or front orientation
-            for item in same_id:
-                if 45 <= item["orientation"] < 63 or 9 <= item["orientation"] < 27:
-                    if a_id in cloth_change_ids:
-                        if item["cloth_id"] != a_cloth_id:
-                            # found positive sample of sideway orientation and different cloth
-                            same_id_diff_ori.append(item)
-                    else:
-                        same_id_diff_ori.append(item)
-            for item in diff_id:
-                if (
-                    0 <= item["orientation"] <= 9
-                    or 63 <= item["orientation"] <= 71
-                    or 27 <= item["orientation"] <= 45
+        for item in self.train_dir:
+            item_id = item["p_id"]
+            item_segment = get_orientation(
+                angle=item["orientation"], num_segments=self.num_segments
+            )
+            item_cloth_id = item.get("cloth_id", 0)
+
+            # Check if anchor and item are in front/back or left/right segment together
+            is_same_opposite_segment = (item_segment % (self.num_segments / 2)) != (
+                a_segment % (self.num_segments / 2)
+            )
+            is_same_id = a_id != item_id
+            is_diff_cloth = item_cloth_id != a_cloth_id
+
+            if is_same_opposite_segment is True:
+                if is_same_id is True and (
+                    a_id not in cloth_change_ids or is_diff_cloth
+                ):
+                    same_id_diff_ori.append(item)
+            elif is_same_opposite_segment is False:
+                if is_same_id is False and (
+                    a_id not in cloth_change_ids or is_diff_cloth
                 ):
                     diff_id_same_ori.append(item)
-        else:
-            # anchor has sideway orientation
-            for item in same_id:
-                if (
-                    0 <= item["orientation"] <= 9
-                    or 63 <= item["orientation"] <= 71
-                    or 27 <= item["orientation"] <= 45
-                ):
-                    if a_id in cloth_change_ids:
-                        if item["cloth_id"] != a_cloth_id:
-                            # found positive sample of sideway orientation and different cloth
-                            same_id_diff_ori.append(item)
-                    else:
-                        same_id_diff_ori.append(item)
-            for item in diff_id:
-                if 45 <= item["orientation"] < 63 or 9 <= item["orientation"] < 27:
-                    diff_id_same_ori.append(item)
 
-        try:
+        if len(same_id_diff_ori) > 0:
             p_img = random.choice(same_id_diff_ori)
-        except:
+        else:
             p_img = random.choice(same_id)
         p_img_path = p_img["img_path"]
         p_pose = p_img["pose_landmarks"]
 
-        try:
+        if len(diff_id_same_ori) > 0:
             n_img = random.choice(diff_id_same_ori)
-        except:
+        else:
             n_img = random.choice(diff_id)
         n_img_path = n_img["img_path"]
         n_pose = n_img["pose_landmarks"]
@@ -152,12 +161,11 @@ class TrainDatasetOrientation(Dataset):
         p_pose_tensor = get_pose_tensor(p_pose, p_size)
         n_pose_tensor = get_pose_tensor(n_pose, n_size)
 
-        # a_target = torch.zeros(self.num_classes)
-        # a_target[a_id_index] = 1
         return (
             (a_img_tensor, p_img_tensor, n_img_tensor),
             (pose_tensor, p_pose_tensor, n_pose_tensor),
             a_id_index,
+            position_mask,
         )
 
 

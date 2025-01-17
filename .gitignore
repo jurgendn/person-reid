@@ -8,7 +8,8 @@ __pycache__/
 
 .notebooks
 external_data/
-sample
+sample/
+checkpoints/
 
 data/
 *.zip

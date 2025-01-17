@@ -18,38 +18,44 @@ class AggregationNet(nn.Module):
 
 
 class FusionNet(nn.Module):
-    def __init__(self, config: MiscellaneusConfig) -> None:
+    def __init__(
+        self,
+        fusion_net_apprearance_dim: int,
+        fusion_net_output_dim: int,
+        fusion_net_shape_dim: int,
+    ) -> None:
         super(FusionNet, self).__init__()
-        self.out_features = config.fusion_net_output_dim
+        self.out_features = fusion_net_output_dim
 
         self.appearance_net = nn.Sequential(
             nn.Linear(
-                in_features=config.fusion_net_apprearance_dim,
-                out_features=config.fusion_net_output_dim,
+                in_features=fusion_net_apprearance_dim,
+                out_features=fusion_net_output_dim,
             ),
             nn.LeakyReLU(),
         )
         self.shape_net = nn.Sequential(
             nn.Linear(
-                in_features=config.fusion_net_shape_dim,
-                out_features=config.fusion_net_output_dim,
+                in_features=fusion_net_shape_dim,
+                out_features=fusion_net_output_dim,
             ),
             nn.LeakyReLU(),
         )
 
         self.theta = AggregationNet()
-        self.bn = nn.BatchNorm1d(num_features=config.fusion_net_output_dim)
+        self.bn = nn.BatchNorm1d(num_features=2 * fusion_net_output_dim)
         init.normal_(self.bn.weight.data, 1.0, 0.02)
-        (init.constant_(self.bn.bias.data, 0.0),)
+        init.constant_(self.bn.bias.data, 0.0)
 
     def forward(
         self, appearance_features: torch.Tensor, shape_features: torch.Tensor
     ) -> torch.Tensor:
         appearance = self.appearance_net(appearance_features)
         shape = self.shape_net(shape_features)
+
         if BASIC_CONFIG.AGG == "sum":
             agg_features = self.theta(x=appearance, y=shape)
         else:
-            agg_features = torch.cat((appearance, shape), dim=0)
+            agg_features = torch.cat((appearance, shape), dim=1)
         agg_features = self.bn(agg_features)
         return agg_features

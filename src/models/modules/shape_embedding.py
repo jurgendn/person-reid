@@ -125,6 +125,7 @@ class ShapeEmbedding(nn.Module):
         n_hidden: int,
         out_features: int,
         relation_layers: List[Tuple[int, int]],
+        aggregation: str,
     ) -> None:
         super(ShapeEmbedding, self).__init__()
         assert out_features == relation_layers[0][0]
@@ -135,9 +136,9 @@ class ShapeEmbedding(nn.Module):
             out_features=out_features,
         )
         self.relation_net = RelationNetwork(layers=relation_layers)
-        if BASIC_CONFIG.AGGREGATION_TYPE == "mean":
+        if aggregation == "mean":
             self.graph_pooling = gnn.MeanAggregation()
-        elif BASIC_CONFIG.AGGREGATION_TYPE == "max":
+        elif aggregation == "max":
             self.graph_pooling = gnn.MaxAggregation()
 
         self.bn = nn.BatchNorm1d(self.n_dim)
@@ -150,7 +151,6 @@ class ShapeEmbedding(nn.Module):
         graph_representation = self.graph_pooling(x=relation_features)
 
         return self.bn(graph_representation.reshape(-1, self.n_dim))
-        # return graph_representation.reshape(-1, self.n_dim)
 
 
 if __name__ == "__main__":
@@ -158,5 +158,7 @@ if __name__ == "__main__":
         pose_n_features=4,
         n_hidden=1024,
         out_features=128,
-        relation_layers=[[128, 256], [256, 512]],
-    )
+        relation_layers=[(128, 256), (256, 512) ],
+        aggregation="max",
+    )   
+    print(net)
